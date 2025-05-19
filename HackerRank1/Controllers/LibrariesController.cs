@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using LibraryService.WebAPI.Data;
 using LibraryService.WebAPI.Services;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LibraryService.WebAPI.Controllers
 {
@@ -19,6 +20,7 @@ namespace LibraryService.WebAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAll()
         {
             var libraries = await _librariesService.Get(null);
