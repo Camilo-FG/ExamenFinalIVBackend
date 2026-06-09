@@ -83,6 +83,7 @@ namespace LibraryService.WebAPI
                         errorCodesToAdd: null);
                 }),
                 poolSize: 20);
+
             services.AddControllers();
 
             // Add Swagger generation
