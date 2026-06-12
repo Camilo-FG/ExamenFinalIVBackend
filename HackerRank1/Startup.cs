@@ -67,7 +67,10 @@ namespace LibraryService.WebAPI
             {
                 options.AddPolicy(CorsPolicyName, policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+                    policy.WithOrigins(
+                              "http://localhost:5173",
+                              "http://localhost:5174",
+                              "https://examenfinalalex.netlify.app")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
