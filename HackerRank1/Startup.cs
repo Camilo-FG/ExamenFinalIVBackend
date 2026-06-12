@@ -20,6 +20,8 @@ namespace LibraryService.WebAPI
 
         public IConfiguration Configuration { get; }
 
+        private const string CorsPolicyName = "FrontendPolicy";
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -29,6 +31,18 @@ namespace LibraryService.WebAPI
             services.AddTransient<IFraudService, FraudService>();
 
             services.AddDbContext<LibraryContext>(options => options.UseInMemoryDatabase("librarydb"));
+
+            // CORS: allow the frontend dev servers (Vite) to call this API
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicyName, policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
             services.AddControllers();
 
             // Add Swagger generation
@@ -62,6 +76,8 @@ namespace LibraryService.WebAPI
             }
 
             app.UseRouting();
+
+            app.UseCors(CorsPolicyName);
 
             app.UseEndpoints(endpoints =>
             {
