@@ -70,7 +70,8 @@ namespace LibraryService.WebAPI
                     policy.WithOrigins(
                               "http://localhost:5173",
                               "http://localhost:5174",
-                              "https://examenfinalalex.netlify.app")
+                              "https://examenfinalalex.netlify.app",
+                              "https://alexfinalex.netlify.app")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
