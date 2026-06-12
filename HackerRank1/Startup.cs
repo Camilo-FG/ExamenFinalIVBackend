@@ -4,9 +4,7 @@ using LibraryService.WebAPI.Data;
 using LibraryService.WebAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +36,6 @@ namespace LibraryService.WebAPI
                                 ?? throw new InvalidOperationException("Invalid JWT Settings");
 
             // 2. Registro de DI
-
             services.AddSingleton(jwtSettings);
             services.AddScoped<IAuthenticationService, AuthenticationService>();
 
@@ -65,22 +62,7 @@ namespace LibraryService.WebAPI
             // 4. Configurar Autorizacion
             services.AddAuthorization();
 
-            // 5. Configurar CORS para el FE (Vite dev server)
-            services.AddCors(o => o.AddPolicy("Frontend", p => p
-                .WithOrigins("http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()));
-
-
-            // Add support for Dependency Injection for internal services (BooksService and LibrariesService)
-            services.AddTransient<ILibrariesService,  LibrariesService>();
-            services.AddTransient<IBooksService,  BooksService>();
-            services.AddTransient<IFraudService, FraudService>();
-
-<<<<<<< HEAD
-            services.AddDbContext<LibraryContext>(options => options.UseInMemoryDatabase("librarydb"));
-
-            // CORS: allow the frontend dev servers (Vite) to call this API
+            // 5. Configurar CORS para el FE (Vite dev servers)
             services.AddCors(options =>
             {
                 options.AddPolicy(CorsPolicyName, policy =>
@@ -90,7 +72,12 @@ namespace LibraryService.WebAPI
                           .AllowAnyMethod();
                 });
             });
-=======
+
+            // Add support for Dependency Injection for internal services (BooksService and LibrariesService)
+            services.AddTransient<ILibrariesService,  LibrariesService>();
+            services.AddTransient<IBooksService,  BooksService>();
+            services.AddTransient<IFraudService, FraudService>();
+
             services.AddDbContextPool<LibraryContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
                 {
@@ -100,7 +87,6 @@ namespace LibraryService.WebAPI
                         errorCodesToAdd: null);
                 }),
                 poolSize: 20);
->>>>>>> 607f4ca0288524b8b07f5ffb22d217b08173ddfb
 
             services.AddControllers();
 
@@ -134,25 +120,21 @@ namespace LibraryService.WebAPI
                 });
             }
 
-
-
+            // Aplicar migraciones solo contra PostgreSQL (los tests usan otro proveedor)
             using (var scope = app.ApplicationServices.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<LibraryContext>();
-                db.Database.Migrate();
+                if (db.Database.IsNpgsql())
+                    db.Database.Migrate();
             }
 
             app.UseRouting();
 
-<<<<<<< HEAD
             app.UseCors(CorsPolicyName);
-=======
-            app.UseCors("Frontend");
 
             // Agregar los metodos de Auth al Middleware Pipeline.
             app.UseAuthentication();
             app.UseAuthorization();
->>>>>>> 607f4ca0288524b8b07f5ffb22d217b08173ddfb
 
             app.UseEndpoints(endpoints =>
             {

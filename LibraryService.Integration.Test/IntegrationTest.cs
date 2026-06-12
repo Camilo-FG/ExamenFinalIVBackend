@@ -34,9 +34,9 @@ namespace LibraryService.Tests
                         .UseSqlite("DataSource=:memory:")
                         .EnableSensitiveDataLogging()
                         .Options);
+            // Program ya usa Startup; repetir UseStartup duplicaba los registros (p. ej. esquema Bearer)
             Client = _factory.WithWebHostBuilder(builder =>
-                builder.UseStartup<Startup>()
-                .ConfigureServices(services =>
+                builder.ConfigureServices(services =>
                 {
                     services.RemoveAll(typeof(LibraryContext));
                     services.AddSingleton(context);
