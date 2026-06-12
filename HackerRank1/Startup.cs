@@ -1,13 +1,19 @@
-﻿using LibraryService.WebAPI.Data;
+using HackerRank1.Entities;
+using HackerRank1.Services;
+using LibraryService.WebAPI.Data;
 using LibraryService.WebAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace LibraryService.WebAPI
 {
@@ -25,11 +31,53 @@ namespace LibraryService.WebAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // 1. jwtSettings binding
+            var jwtSettings = Configuration
+                                .GetSection("JwtSettings")
+                                .Get<JwtSettings>()
+                                ?? throw new InvalidOperationException("Invalid JWT Settings");
+
+            // 2. Registro de DI
+
+            services.AddSingleton(jwtSettings);
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+            // 3. Configurar Authenticacion
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(option =>
+                {
+                    option.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+
+                        ValidateIssuer = true,
+                        ValidIssuer = jwtSettings.Issuer,
+
+                        ValidateAudience = true,
+                        ValidAudience = jwtSettings.Audience,
+
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero
+                    };
+                });
+
+            // 4. Configurar Autorizacion
+            services.AddAuthorization();
+
+            // 5. Configurar CORS para el FE (Vite dev server)
+            services.AddCors(o => o.AddPolicy("Frontend", p => p
+                .WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod()));
+
+
             // Add support for Dependency Injection for internal services (BooksService and LibrariesService)
             services.AddTransient<ILibrariesService,  LibrariesService>();
             services.AddTransient<IBooksService,  BooksService>();
             services.AddTransient<IFraudService, FraudService>();
 
+<<<<<<< HEAD
             services.AddDbContext<LibraryContext>(options => options.UseInMemoryDatabase("librarydb"));
 
             // CORS: allow the frontend dev servers (Vite) to call this API
@@ -42,6 +90,17 @@ namespace LibraryService.WebAPI
                           .AllowAnyMethod();
                 });
             });
+=======
+            services.AddDbContextPool<LibraryContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 1,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null);
+                }),
+                poolSize: 20);
+>>>>>>> 607f4ca0288524b8b07f5ffb22d217b08173ddfb
 
             services.AddControllers();
 
@@ -75,9 +134,25 @@ namespace LibraryService.WebAPI
                 });
             }
 
+
+
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<LibraryContext>();
+                db.Database.Migrate();
+            }
+
             app.UseRouting();
 
+<<<<<<< HEAD
             app.UseCors(CorsPolicyName);
+=======
+            app.UseCors("Frontend");
+
+            // Agregar los metodos de Auth al Middleware Pipeline.
+            app.UseAuthentication();
+            app.UseAuthorization();
+>>>>>>> 607f4ca0288524b8b07f5ffb22d217b08173ddfb
 
             app.UseEndpoints(endpoints =>
             {
